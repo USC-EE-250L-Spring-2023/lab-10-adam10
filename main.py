@@ -7,14 +7,18 @@ import pandas as pd
 import requests
 import plotly.express as px
 
+
 def generate_data() -> List[int]:
     """Generate some random data."""
     return np.random.randint(100, 10000, 1000).tolist()
 
 def process1(data: List[int]) -> List[int]:
-    """TODO: Document this function. What does it do? What are the inputs and outputs?"""
+    """This function will take a list of integers as an input and find the next largest prime number 
+    for all of its enteries. It does this by incrementing the given value, checking if it is prime 
+    by seeing of all of its modulus value up to it returns a non-zero value, and iterating by 1
+    until the next largest prime is found. It returns a list of integers since it does this
+    for all enteries in the input list."""
     def foo(x):
-        """Find the next largest prime number."""
         while True:
             x += 1
             if all(x % i for i in range(2, x)):
@@ -22,9 +26,13 @@ def process1(data: List[int]) -> List[int]:
     return [foo(x) for x in data]
 
 def process2(data: List[int]) -> List[int]:
-    """TODO: Document this function. What does it do? What are the inputs and outputs?"""
+    """This function will take a list of integers as an input and find the next largest perfect square
+    for all of its enteries. Like the previous function about, the process iterates, incrementing the 
+    value by one. The only thing that changes is the conditional which essentially checks if the square
+    of the value's square root is the same as the original value when converted to an integer. This condition
+    will only return if the value is a perfect square. Since it does this for all enteries in the input, it
+    again returns a list of integers that meets these specifications."""
     def foo(x):
-        """Find the next largest prime number."""
         while True:
             x += 1
             if int(np.sqrt(x)) ** 2 == x:
@@ -32,10 +40,13 @@ def process2(data: List[int]) -> List[int]:
     return [foo(x) for x in data]
 
 def final_process(data1: List[int], data2: List[int]) -> List[int]:
-    """TODO: Document this function. What does it do? What are the inputs and outputs?"""
-    return np.mean([x - y for x, y in zip(data1, data2)])
+    """This function will take in 2 lists of integers as an input and zip the 2 lists together into a set of
+    essentially key-value pairs. Then, it will iterate through each list simultaneously and take the difference
+    between each list's respective entry for each iteration. Finally, the mean of all of these differences will
+    be taken. While a single integer will be calculated, the function returns in the form of a list of integers."""
+    return np.mean([abs(x - y) for x, y in zip(data1, data2)])
 
-offload_url = 'http://192.168.4.74:5000' # TODO: Change this to the IP address of your server
+offload_url = 'http://localhost:5000'
 
 def run(offload: Optional[str] = None) -> float:
     """Run the program, offloading the specified function(s) to the server.
@@ -54,7 +65,7 @@ def run(offload: Optional[str] = None) -> float:
         data1 = None
         def offload_process1(data):
             nonlocal data1
-            # TODO: Send a POST request to the server with the input data
+            response = requests.post(f"{offload_url}/process1", json=data)
             data1 = response.json()
         thread = threading.Thread(target=offload_process1, args=(data,))
         thread.start()
@@ -66,26 +77,112 @@ def run(offload: Optional[str] = None) -> float:
         #   ChatGPT is also good at explaining the difference between parallel and concurrent execution!
         #   Make sure to cite any sources you use to answer this question.
     elif offload == 'process2':
-        # TODO: Implement this case
-        pass
+        data2 = None
+        def offload_process2(data):
+            nonlocal data2
+            response = requests.post(f"{offload_url}/process2", json=data)
+            data2 = response.json()
+        thread = threading.Thread(target=offload_process2, args=(data,))
+        thread.start()
+        data1 = process1(data)
+        thread.join()
     elif offload == 'both':
-        # TODO: Implement this case
-        pass
+        data1 = None
+        data2 = None
+        
+        def offload_process1(data):
+            nonlocal data1
+            response = requests.post(f"{offload_url}/process1", json=data)
+            data1 = response.json()
+        thread1 = threading.Thread(target=offload_process1, args=(data,))
+    
+        def offload_process2(data):
+            nonlocal data2
+            response = requests.post(f"{offload_url}/process2", json=data)
+            data2 = response.json()
+        thread2 = threading.Thread(target=offload_process2, args=(data,))
+
+        thread1.start()
+        thread2.start()
+
+        thread1.join()
+        thread2.join()
 
     ans = final_process(data1, data2)
     return ans 
 
 def main():
-    # TODO: Run the program 5 times for each offloading mode, and record the total execution time
-    #   Compute the mean and standard deviation of the execution times
-    #   Hint: store the results in a pandas DataFrame, use previous labs as a reference
+    rows = []
+    columns = ["none", "p1", "p2", "both"]
 
+    arr = []
+    for i in range(5):
+        temp = run()
+        arr.append(temp)
+    mean = np.mean(arr)
+    std = np.std(arr)
+    total = np.sum(arr)
+    arr.append(mean)
+    arr.append(std)
+    arr.append(total)
+    columns = arr
+    rows.append(columns)
 
-    # TODO: Plot makespans (total execution time) as a bar chart with error bars
-    # Make sure to include a title and x and y labels
+    arr = []
+    for i in range(5):
+        temp = run('process1')
+        arr.append(temp)
+    mean = np.mean(arr)
+    std = np.std(arr)
+    total = np.sum(arr)
+    arr.append(mean)
+    arr.append(std)
+    arr.append(total)
+    columns = arr
+    rows.append(columns)
 
+    arr = []
+    for i in range(5):
+        temp = run('process2')
+        arr.append(temp)
+    mean = np.mean(arr)
+    std = np.std(arr)
+    total = np.sum(arr)
+    arr.append(mean)
+    arr.append(std)
+    arr.append(total)
+    columns = arr
+    rows.append(columns)
 
-    # TODO: save plot to "makespan.png"
+    arr = []
+    for i in range(5):
+        temp = run('both')
+        arr.append(temp)
+    mean = np.mean(arr)
+    std = np.std(arr)
+    total = np.sum(arr)
+    arr.append(mean)
+    arr.append(std)
+    arr.append(total)
+    columns = arr
+    rows.append(columns)
+
+    a = pd.DataFrame(rows)
+    df = a.transpose()
+    temp = df.iloc[5]
+    mea = temp.tolist()
+    temp = df.iloc[6]
+    err = temp.tolist()
+    #print(df)
+    #print(err)
+    
+    names = ["none", "p1", "p2", "both"]
+
+    fig = px.bar(df, x=names, y=mea, error_y=err, title="Time Data for Each Mode")
+    fig.update_xaxes(title_text="Trial Type")
+    fig.update_yaxes(title_text="Time")
+
+    fig.write_image("makespan.png")
 
 
     # Question 4: What is the best offloading mode? Why do you think that is?
